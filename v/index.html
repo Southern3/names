@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强版随机抽取名字</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#EC4899',
+                        accent: '#8B5CF6',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .text-shadow-lg {
+                text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            }
+            .text-glow {
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
+            }
+            .name-shuffle {
+                animation: nameShuffle 0.1s linear infinite;
+            }
+            .name-reveal {
+                animation: nameReveal 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards;
+            }
+            .btn-bounce:hover {
+                animation: bounce 0.5s ease infinite alternate;
+            }
+            .prize-confetti {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                opacity: 0;
+                pointer-events: none;
+            }
+            @keyframes nameShuffle {
+                0% { transform: translateY(0); opacity: 0.7; }
+                50% { transform: translateY(-5px); opacity: 1; }
+                100% { transform: translateY(0); opacity: 0.7; }
+            }
+            @keyframes nameReveal {
+                0% { transform: scale(0.8); opacity: 0; }
+                50% { transform: scale(1.2); opacity: 0.8; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes bounce {
+                from { transform: translateY(0); }
+                to { transform: translateY(-6px); }
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 0 10px rgba(79, 70, 229, 0.5); }
+                50% { box-shadow: 0 0 25px rgba(79, 70, 229, 0.8); }
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                50% { transform: translateY(-10px) rotate(5deg); }
+            }
+            @keyframes confetti-fall {
+                0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease forwards;
+            }
+            .animate-slide-up {
+                animation: slideUp 0.5s ease forwards;
+            }
+            .animate-pulse {
+                animation: pulse 2s ease-in-out infinite;
+            }
+            .animate-glow {
+                animation: glow 2s ease-in-out infinite;
+            }
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-light to-gray-100 font-sans overflow-x-hidden">
+    <!-- 主容器 -->
+    <div class="min-h-screen flex flex-col justify-center items-center p-4 relative">
+        <!-- 粒子背景 -->
+        <div id="particles-container" class="absolute inset-0 overflow-hidden opacity-60"></div>
+        
+        <!-- 主内容 -->
+        <div class="max-w-2xl w-full mx-auto relative z-10">
+            <!-- 标题 -->
+            <div class="text-center mb-10 animate-fade-in">
+                <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-primary mb-4 text-shadow-lg">
+                    随机抽取名字
+                </h1>
+                <p class="text-gray-600 text-lg">点击下方按钮开始随机抽取</p>
+            </div>
+            
+            <!-- 名字显示区域 -->
+            <div class="relative mb-8 animate-slide-up">
+                <div class="bg-gradient-to-br from-primary/90 to-accent/90 rounded-2xl shadow-xl overflow-hidden p-8 text-center h-64 flex items-center justify-center">
+                    <div id="nameDisplay" class="text-white font-bold text-[clamp(2rem,6vw,4rem)] text-shadow-lg">
+                        准备开始
+                    </div>
+                </div>
+                
+                <!-- 抽取效果容器 -->
+                <div id="effectContainer" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div class="flex justify-center mb-8 animate-slide-up" style="animation-delay: 0.2s">
+                <button id="startButton" class="bg-primary text-white px-10 py-4 rounded-full font-bold text-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed animate-glow">
+                    开始抽取 <i class="fa fa-random ml-2"></i>
+                </button>
+            </div>
+            
+            <!-- 抽取统计 -->
+            <div class="grid grid-cols-2 gap-4 mb-8 animate-slide-up" style="animation-delay: 0.3s">
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <p class="text-gray-500 text-sm">已抽取次数</p>
+                    <p class="text-primary font-bold text-2xl mt-1" id="drawCount">0</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <p class="text-gray-500 text-sm">名单人数</p>
+                    <p class="text-accent font-bold text-2xl mt-1" id="nameCount">0</p>
+                </div>
+            </div>
+            
+            <!-- 名单设置 -->
+            <div class="bg-white rounded-xl shadow-lg p-6 animate-slide-up" style="animation-delay: 0.4s">
+                <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center">
+                    <i class="fa fa-users text-primary mr-2"></i> 名单设置
+                </h3>
+                
+                <div class="flex space-x-2 mb-4">
+                    <input type="text" id="studentName" placeholder="输入名字" class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <button id="addName" class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                        添加
+                    </button>
+                </div>
+                
+                <div class="flex justify-between items-center mb-2">
+                    <button id="importNames" class="text-sm text-primary hover:text-primary/80 transition-colors">
+                        <i class="fa fa-upload mr-1"></i> 导入
+                    </button>
+                    <button id="exportNames" class="text-sm text-primary hover:text-primary/80 transition-colors">
+                        <i class="fa fa-download mr-1"></i> 重置名单
+                    </button>
+                </div>
+                
+                <div class="h-40 overflow-y-auto bg-gray-50 rounded-lg shadow-sm p-2 border border-gray-100">
+                    <ul id="nameList" class="space-y-2">
+                        <!-- 名字列表将通过JavaScript动态生成 -->
+                        <li class="text-center text-gray-500 py-4">请添加名字</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="mt-auto py-6 text-center text-gray-500 text-sm animate-fade-in">
+            <p>© 2025 随机抽取名字 | 简单高效的随机选择工具</p>
+        </footer>
+    </div>
+    
+    <!-- 音频元素 -->
+    <audio id="selectSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="endSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // 名字列表
+        let names = ["1","2"];
+        let drawHistory = [];
+        
+        // 状态变量
+        let isSelecting = false;
+        let selectInterval;
+        let shuffleSpeed = 100; // 初始速度，毫秒
+        let lastSelectedIndex = -1;
+        
+        // DOM 元素
+        const nameDisplay = document.getElementById('nameDisplay');
+        const startButton = document.getElementById('startButton');
+        const studentName = document.getElementById('studentName');
+        const addName = document.getElementById('addName');
+        const nameList = document.getElementById('nameList');
+        const nameCount = document.getElementById('nameCount');
+        const drawCount = document.getElementById('drawCount');
+        const resetNames = document.getElementById('resetNames');
+        const importNames = document.getElementById('importNames');
+        const exportNames = document.getElementById('exportNames');
+        const selectSound = document.getElementById('selectSound');
+        const endSound = document.getElementById('endSound');
+        const effectContainer = document.getElementById('effectContainer');
+        
+        // 初始化
+        function init() {
+            // 加载保存的名字和历史记录
+            loadNames();
+            loadHistory();
+            
+            // 更新名字列表和统计信息
+            updateNameList();
+            updateStats();
+            
+            // 创建粒子背景
+            createParticles();
+            
+            // 添加键盘事件
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space') {
+                    if (names.length > 0) {
+                        startButton.click();
+                    }
+                }
+            });
+            
+            // 添加导入文件事件
+            importNames.addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.txt,.json';
+                input.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                const content = e.target.result;
+                                let newNames;
+                                
+                                // 尝试解析JSON
+                                try {
+                                    newNames = JSON.parse(content);
+                                    if (!Array.isArray(newNames)) {
+                                        throw new Error('不是有效的数组');
+                                    }
+                                } catch (jsonError) {
+                                    // 尝试按行分割文本
+                                    newNames = content.split('\n')
+                                        .map(name => name.trim())
+                                        .filter(name => name.length > 0);
+                                }
+                                
+                                if (newNames.length > 0) {
+                                    names = newNames;
+                                    saveNames();
+                                    updateNameList();
+                                    showNotification('名单导入成功');
+                                } else {
+                                    showNotification('未能导入任何名字', 'error');
+                                }
+                            } catch (error) {
+                                showNotification('导入失败: ' + error.message, 'error');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                input.click();
+            });
+            
+            // 添加导出文件事件
+            exportNames.addEventListener('click', function() {
+                names=[];
+                saveNames();
+                updateNameList();
+                showNotification('重置名单成功');
+                // if (names.length === 0) {
+                //     showNotification('名单为空，无法导出', 'error');
+                //     return;
+                // }
+                
+                // const content = JSON.stringify(names, null, 2);
+                // const blob = new Blob([content], { type: 'application/json' });
+                // const url = URL.createObjectURL(blob);
+                
+                // const a = document.createElement('a');
+                // a.href = url;
+                // a.download = 'name_list.json';
+                // document.body.appendChild(a);
+                // a.click();
+                // document.body.removeChild(a);
+                // URL.revokeObjectURL(url);
+                
+                // showNotification('名单导出成功');
+            });
+        }
+        
+        // 加载保存的名字
+        function loadNames() {
+            const savedNames = localStorage.getItem('randomNames');
+            if (savedNames) {
+                names = JSON.parse(savedNames);
+            }
+        }
+        
+        // 加载历史记录
+        function loadHistory() {
+            const savedHistory = localStorage.getItem('drawHistory');
+            if (savedHistory) {
+                drawHistory = JSON.parse(savedHistory);
+            }
+        }
+        
+        // 保存名字
+        function saveNames() {
+            localStorage.setItem('randomNames', JSON.stringify(names));
+        }
+        
+        // 保存历史记录
+        function saveHistory() {
+            localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
+        }
+        
+        // 更新名字列表
+        function updateNameList() {
+            nameList.innerHTML = '';
+            
+            if (names.length === 0) {
+                nameList.innerHTML = '<li class="text-center text-gray-500 py-4">请添加名字</li>';
+            } else {
+                // 计算每个名字被选中的次数
+                const selectionCounts = {};
+                drawHistory.forEach(name => {
+                    selectionCounts[name] = (selectionCounts[name] || 0) + 1;
+                });
+                
+                names.forEach((name, index) => {
+                    const count = 0//selectionCounts[name] || 0;
+                    
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center p-2 rounded-lg hover:bg-gray-100 transition-colors';
+                    
+                    // 根据选中次数添加不同的样式
+                    let countBadgeClass = 'bg-gray-100 text-gray-600';
+                    if (count >= 3) countBadgeClass = 'bg-red-100 text-red-600';
+                    else if (count >= 1) countBadgeClass = 'bg-yellow-100 text-yellow-600';
+                    
+                    li.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="w-6 text-center text-gray-500 mr-2">${index + 1}</span>
+                            <span class="font-medium">${name}</span>
+                            ${count > 0 ? `<span class="ml-2 text-xs ${countBadgeClass} px-2 py-0.5 rounded-full">${count}</span>` : ''}
+                        </div>
+                        <button class="text-red-500 hover:text-red-700 transition-colors delete-name" data-index="${index}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    nameList.appendChild(li);
+                });
+                
+                // 添加删除事件
+                document.querySelectorAll('.delete-name').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        names.splice(index, 1);
+                        saveNames();
+                        updateNameList();
+                    });
+                });
+            }
+            
+            // 更新名字计数
+            nameCount.textContent = names.length;
+            
+            // 更新按钮状态
+            startButton.disabled = names.length === 0;
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            drawCount.textContent = drawHistory.length;
+        }
+        
+        // 开始随机抽取
+        function startSelection() {
+            if (names.length === 0) return;
+            
+            isSelecting = true;
+            startButton.textContent = '停止抽取';
+            startButton.classList.remove('animate-glow');
+            startButton.classList.add('bg-red-500');
+            
+            // 播放选择音效
+            playSound(selectSound);
+            
+            // 添加动画效果
+            nameDisplay.classList.add('name-shuffle');
+            nameDisplay.classList.remove('text-glow');
+            
+            // 清除之前的效果
+            effectContainer.innerHTML = '';
+            
+            // 开始随机显示名字
+            selectInterval = setInterval(() => {
+                // 确保不连续选中同一个人
+                let randomIndex;
+                if (names.length > 1) {
+                    do {
+                        randomIndex = Math.floor(Math.random() * names.length);
+                    } while (randomIndex === lastSelectedIndex);
+                } else {
+                    randomIndex = 0;
+                }
+                lastSelectedIndex = randomIndex;
+                
+                nameDisplay.textContent = names[randomIndex];
+                
+                // 每隔一段时间播放音效
+                if (Math.random() < 0.3) {
+                    playSound(selectSound);
+                }
+                
+                // 随机改变背景色
+                const hue = Math.floor(Math.random() * 360);
+                const bgColor = `hsl(${hue}, 70%, 60%)`;
+                nameDisplay.parentElement.style.backgroundColor = bgColor;
+                
+            }, shuffleSpeed);
+            
+            // 添加抽取动画效果
+            createShuffleEffects();
+        }
+        
+        // 停止随机抽取
+        function stopSelection() {
+            if (!isSelecting) return;
+            
+            isSelecting = false;
+            clearInterval(selectInterval);
+            startButton.textContent = '开始抽取';
+            startButton.classList.add('animate-glow');
+            startButton.classList.remove('bg-red-500');
+            
+            // 恢复背景色
+            nameDisplay.parentElement.style.backgroundColor = '';
+            
+            // 播放结束音效
+            playSound(endSound);
+            
+            // 移除名字洗牌动画，添加显示动画
+            nameDisplay.classList.remove('name-shuffle');
+            nameDisplay.classList.add('name-reveal', 'text-glow');
+            
+            // 添加选中名字的视觉效果
+            createRevealEffects();
+            
+            // 记录抽取结果
+            const selectedName = nameDisplay.textContent;
+            drawHistory.push(selectedName);
+            saveHistory();
+            updateStats();
+            
+            // 一段时间后移除显示动画
+            setTimeout(() => {
+                nameDisplay.classList.remove('name-reveal', 'text-glow');
+            }, 2000);
+        }
+        
+        // 播放声音
+        function playSound(audioElement) {
+            if (audioElement) {
+                audioElement.currentTime = 0;
+                audioElement.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+        
+        // 创建粒子背景
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // 随机大小和颜色
+                const size = Math.random() * 8 + 2;
+                const colors = ['rgba(79, 70, 229, 0.3)', 'rgba(236, 72, 153, 0.3)', 'rgba(139, 92, 246, 0.3)'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.backgroundColor = color;
+                
+                // 随机位置
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // 随机动画
+                const duration = Math.random() * 30 + 20;
+                const delay = Math.random() * 10;
+                
+                particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+                
+                container.appendChild(particle);
+            }
+            
+            // 添加浮动动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float {
+                    0% {
+                        transform: translate(0, 0) rotate(0deg);
+                        opacity: ${Math.random() * 0.5 + 0.3};
+                    }
+                    50% {
+                        transform: translate(${Math.random() * 40 - 20}px, ${Math.random() * 40 - 20}px) rotate(180deg);
+                        opacity: ${Math.random() * 0.5 + 0.3};
+                    }
+                    100% {
+                        transform: translate(0, 0) rotate(360deg);
+                        opacity: ${Math.random() * 0.5 + 0.3};
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 创建洗牌动画效果
+        function createShuffleEffects() {
+            const container = effectContainer;
+            container.innerHTML = '';
+            
+            // 创建光影效果
+            const light = document.createElement('div');
+            light.className = 'absolute inset-0 bg-white/20 rounded-2xl';
+            light.style.animation = 'pulse 0.5s ease-in-out infinite alternate';
+            container.appendChild(light);
+            
+            // 创建闪烁的小点
+            const dotCount = 10;
+            for (let i = 0; i < dotCount; i++) {
+                setTimeout(() => {
+                    if (!isSelecting) return;
+                    
+                    const dot = document.createElement('div');
+                    dot.className = 'absolute w-3 h-3 rounded-full bg-white/70';
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.top = `${Math.random() * 100}%`;
+                    dot.style.animation = `fadeIn 0.3s ease forwards, fadeIn 0.3s ease reverse forwards 0.3s`;
+                    container.appendChild(dot);
+                    
+                    // 自动移除
+                    setTimeout(() => {
+                        if (container.contains(dot)) {
+                            container.removeChild(dot);
+                        }
+                    }, 600);
+                    
+                }, i * 100);
+            }
+        }
+        
+        // 创建结果显示动画效果
+        function createRevealEffects() {
+            const container = effectContainer;
+            container.innerHTML = '';
+            
+            // 创建闪光效果
+            const flash = document.createElement('div');
+            flash.className = 'absolute inset-0 bg-white/80 rounded-2xl';
+            flash.style.animation = 'fadeIn 0.3s ease forwards, fadeIn 0.3s ease reverse forwards 0.3s';
+            container.appendChild(flash);
+            
+            // 创建庆祝彩带动画
+            createConfetti();
+        }
+        
+        // 创建庆祝彩带
+        function createConfetti() {
+            const container = effectContainer;
+            const confettiCount = 100;
+            const colors = ['#4F46E5', '#EC4899', '#8B5CF6', '#10B981', '#F59E0B'];
+            
+            for (let i = 0; i < confettiCount; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'prize-confetti';
+                    
+                    // 随机形状
+                    const isCircle = Math.random() > 0.5;
+                    if (isCircle) {
+                        confetti.style.borderRadius = '50%';
+                    } else {
+                        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    }
+                    
+                    // 随机大小
+                    const size = Math.random() * 10 + 5;
+                    confetti.style.width = `${size}px`;
+                    confetti.style.height = `${size}px`;
+                    
+                    // 随机颜色
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.backgroundColor = color;
+                    
+                    // 随机位置
+                    confetti.style.left = `${Math.random() * 100}%`;
+                    
+                    // 随机动画
+                    const duration = Math.random() * 3 + 2;
+                    const delay = Math.random() * 0.5;
+                    const rotation = Math.random() * 720 - 360;
+                    const horizontal = Math.random() * 200 - 100;
+                    
+                    confetti.style.animation = `confetti-fall ${duration}s ease-in ${delay}s forwards`;
+                    confetti.style.transform = `translate(${horizontal}px, -100vh) rotate(${rotation}deg)`;
+                    
+                    container.appendChild(confetti);
+                    
+                    // 自动移除
+                    setTimeout(() => {
+                        if (container.contains(confetti)) {
+                            container.removeChild(confetti);
+                        }
+                    }, (duration + delay) * 1000);
+                    
+                }, i * 10);
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in`;
+            
+            if (type === 'error') {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else {
+                notification.classList.add('bg-green-500', 'text-white');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 事件监听
+        startButton.addEventListener('click', function() {
+            if (isSelecting) {
+                stopSelection();
+            } else {
+                startSelection();
+            }
+        });
+        
+        addName.addEventListener('click', function() {
+            const name = studentName.value.trim();
+            if (name) {
+                // 检查是否已存在
+                if (names.includes(name)) {
+                    showNotification('该名字已存在', 'error');
+                } else {
+                    names.push(name);
+                    saveNames();
+                    updateNameList();
+                    studentName.value = '';
+                    studentName.focus();
+                    showNotification('名字已添加');
+                }
+            }
+        });
+        
+        studentName.addEventListener('keydown', function(e) {
+            if (e.code === 'Enter') {
+                addName.click();
+            }
+        });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
