@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随机抽取名字</title>
+    <title>增强版随机抽取名字</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
     <script>
@@ -186,9 +186,9 @@
         </div>
         
         <!-- 页脚 -->
-        <!-- <footer class="mt-auto py-6 text-center text-gray-500 text-sm animate-fade-in">
+        <footer class="mt-auto py-6 text-center text-gray-500 text-sm animate-fade-in">
             <p>© 2025 随机抽取名字 | 简单高效的随机选择工具</p>
-        </footer> -->
+        </footer>
     </div>
     
     <!-- 音频元素 -->
@@ -201,7 +201,55 @@
 
     <script>
         // 名字列表
-        let names = ["1","2"];
+        let names = ["张欣怡",
+                     "张月莹",
+                     "阙瑞祥",
+                     "朱思源",
+                     "黄怡然",
+                     "林敏玲",
+                     "赖梓仙",
+                     "张景豪",
+                     "余昊明",
+                     "张睿欣",
+                     "余顺良",
+                     "赖竣豪",
+                     "廖静怡",
+                     "易鑫",
+                     "游悦含",
+                     "林显睿",
+                     "黄元泊",
+                     "李树贤",
+                     "陈慧欣",
+                     "陈子杰",
+                     "梁沛辰",
+                     "张毅昊",
+                     "谢紫琳",
+                     "曾雨萱",
+                     "陈梓浚",
+                     "谢雅芯",
+                     "莫晓语",
+                     "曾子仪",
+                     "刘巧玥",
+                     "陈灼坤",
+                     "陈锦煜",
+                     "刘金灏",
+                     "曾梓峰",
+                     "郭泽润",
+                     "廖一帆",
+                     "廖煜婷",
+                     "张嘉骏",
+                     "黄茂铨",
+                     "邓启宁",
+                     "陈泽慧",
+                     "邹岚",
+                     "高子豪",
+                     "覃嘉璐",
+                     "陈粤越",
+                     "曾子朗",
+                     "王德辉",
+                     "周畏宇",
+                     "林佳然",
+                     "孔浩然",];
         let drawHistory = [];
         
         // 状态变量
@@ -321,9 +369,11 @@
         
         // 加载保存的名字
         function loadNames() {
-            const savedNames = localStorage.getItem('randomNames');
-            if (savedNames) {
+            const savedNames = localStorage.getItem('randomNames2');
+           
+            if (savedNames&&savedNames.length >= 1) {
                 names = JSON.parse(savedNames);
+                console.log("savedNames",savedNames)
             }
         }
         
@@ -337,7 +387,7 @@
         
         // 保存名字
         function saveNames() {
-            localStorage.setItem('randomNames', JSON.stringify(names));
+            localStorage.setItem('randomNames2', JSON.stringify(names));
         }
         
         // 保存历史记录
